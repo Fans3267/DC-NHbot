@@ -11,10 +11,53 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv("BETA_TOKEN")
 
-client = commands.Bot(command_prefix="!",intents=discord.Intents.all())
+client = commands.Bot(command_prefix="n-",intents=discord.Intents.all())
 @client.event
 async def on_ready():
     print("Running")
+
+#搜尋指令
+@client.command()
+async def search(ctx, search: str):
+    url = f"https://nhentai.net/search/?q={search}"
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    search_res = requests.get(url, headers=headers, timeout=5)
+    search_soup = BeautifulSoup(search_res.text, 'html.parser')
+
+    result_url = []
+    search_result = []
+    search_ammount = 5
+    for i in search_soup.find_all("div", class_="caption"):
+        search_result.append(i.text.strip())
+        if len(search_result) == search_ammount:
+            break
+    if not search_result:
+        await ctx.send("沒有找到任何結果")
+        return
+    
+    for i in search_soup.find_all("a", class_="cover"):
+        result_url.append(i.get("href"))
+        if len(result_url) == search_ammount:
+            break
+
+    #todo: find url and code
+
+    #todo: fix embed 
+    embed = discord.Embed(
+        description=(
+            f"## 搜尋結果 \n"
+            f"  - 1. {search_result[0]} \n"
+            f"  - 2. {search_result[1]} \n"
+            f"  - 3. {search_result[2]} \n"
+            f"  - 4. {search_result[3]} \n"
+            f"  - 5. {search_result[4]} \n"   
+        ),
+        color=discord.Color.random() #亂色
+    )
+    await ctx.send(embed=embed)
+    
+
+
 
 #訊息
 @client.event
