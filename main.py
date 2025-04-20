@@ -1,6 +1,7 @@
 import discord
 import requests
 import re
+import random
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from discord.ext import commands
@@ -16,47 +17,87 @@ client = commands.Bot(command_prefix="n-",intents=discord.Intents.all())
 async def on_ready():
     print("Running")
 
-#搜尋指令
+#幫助 helpme
 @client.command()
-async def search(ctx, search: str):
+async def helpme(ctx):
+    embed = discord.Embed(
+        title="目前功能",
+        description=(
+            "\n"
+            "### - n-helpme : 幫助 \n"
+            "### - n-sr <關鍵字> : 輸入你想要搜尋的東西 並顯示前五的結果跟縮圖 \n"
+            "### - n <數字> : 直接輸入神的語言 \n"
+            "\n"
+            "有任何問題可以至 [群組](https://discord.gg/CA6mS8tChw) 回報\n"
+            "\n"
+            "這我寶 請對她輕聲細語 <3\n"
+            "[圖源](https://www.pixiv.net/artworks/117645492)"
+        ),
+        color=discord.Color.random()
+    )
+    file = discord.File("voyager.jpg", filename="voyager.jpg")
+
+    embed.set_image(url="attachment://voyager.jpg")
+    await ctx.send(file=file, embed=embed)
+
+#搜尋指令 n-sr
+@client.command()
+async def sr(ctx, *, search: str):
+    print(search)
     url = f"https://nhentai.net/search/?q={search}"
     headers = {'User-Agent': 'Mozilla/5.0'}
     search_res = requests.get(url, headers=headers, timeout=5)
     search_soup = BeautifulSoup(search_res.text, 'html.parser')
 
+    captions = search_soup.find_all("div", class_="caption")
+    images = search_soup.find_all("img", class_="lazyload")
+    links = search_soup.find_all("a", class_="cover")
+
     result_url = []
-    search_result = []
+    result_image = []
+    result_name = []
     search_ammount = 5
-    for i in search_soup.find_all("div", class_="caption"):
-        search_result.append(i.text.strip())
-        if len(search_result) == search_ammount:
+    random_image_selector = 0
+    for i in range(search_ammount):
+        try:
+            title = captions[i].text.strip() #標
+            result_name.append(title)
+            
+            img = images[i].get("data-src") #圖
+            result_image.append(img)
+
+            link = links[i].get("href")  #連
+            result_url.append("https://nhentai.net"+link) 
+
+        except Exception as e:
             break
-    if not search_result:
-        await ctx.send("沒有找到任何結果")
+        
+    if(len(result_url)==0):
+        await ctx.send("沒有找到任何結果 。･ﾟ･(つд`ﾟ)･ﾟ･ ")
+        print("== 沒有結果 ==\n")
         return
     
-    for i in search_soup.find_all("a", class_="cover"):
-        result_url.append(i.get("href"))
-        if len(result_url) == search_ammount:
-            break
+    #done: find url and code
+    #done: fix embed
 
-    #todo: find url and code
+    #todo: fix image embed (guess I'll never fix it >:3)
+    random_image_selector = random.randint(0, len(result_image)-1)
+    print("== " + str(random_image_selector) + " ==\n")
 
-    #todo: fix embed 
+    embed_description = "## 搜尋結果 \n"
+    for index, (name, url) in enumerate(zip(result_name, result_url), start=1):
+        embed_description += f" {index}. [{name}]({url}) \n"
+    embed_description += f"\n 第 {random_image_selector +1} 的縮圖 \n (抱歉我懶得做按鈕給你們每本都看 只好做成隨機的了 (・ε・) \n"
     embed = discord.Embed(
-        description=(
-            f"## 搜尋結果 \n"
-            f"  - 1. {search_result[0]} \n"
-            f"  - 2. {search_result[1]} \n"
-            f"  - 3. {search_result[2]} \n"
-            f"  - 4. {search_result[3]} \n"
-            f"  - 5. {search_result[4]} \n"   
-        ),
-        color=discord.Color.random() #亂色
+        description=embed_description,
+        color=discord.Color.random()
     )
+    embed.set_image(url=result_image[random_image_selector])
     await ctx.send(embed=embed)
-    
-
+    #清
+    result_url.clear()
+    result_image.clear()
+    result_name.clear()
 
 
 #訊息
@@ -66,7 +107,7 @@ async def on_message(message):
         return
     await client.process_commands(message)
 
-    #辨別網址
+    #篩選正確網址
     url_regex = re.compile(
     r'https?://nhentai\.net/g/[^\s]+'
     )
