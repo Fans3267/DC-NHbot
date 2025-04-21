@@ -5,6 +5,8 @@ import random
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from discord.ext import commands
+from discord import app_commands
+
 
 #TOEKN
 import os
@@ -12,14 +14,24 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv("BETA_TOKEN")
 
-client = commands.Bot(command_prefix="n-",intents=discord.Intents.all())
+intents = discord.Intents.default()
+intents.message_content = True
+client = commands.Bot(command_prefix="n-",intents=intents)
 @client.event
 async def on_ready():
-    print("Running")
+    try:
+        server = discord.Object(1359744875309830204)
+        synced = await client.tree.sync(guild=server)
+        print(f"Synced {len(synced)} command(s)")
+    except Exception as e:
+        print(f"Error syncing tree: {e}")
+
+server_id = discord.Object(1359744875309830204)
+
 
 #幫助 helpme
-@client.command()
-async def helpme(ctx):
+@client.tree.command(name="helpme",description="指令解釋",guild=server_id)
+async def helpme(interaction: discord.Interaction):
     embed = discord.Embed(
         title="目前功能",
         description=(
@@ -38,7 +50,7 @@ async def helpme(ctx):
     file = discord.File("voyager.jpg", filename="voyager.jpg")
 
     embed.set_image(url="attachment://voyager.jpg")
-    await ctx.send(file=file, embed=embed)
+    await interaction.response.send_message(file=file, embed=embed)
 
 #搜尋指令 n-sr
 @client.command()
