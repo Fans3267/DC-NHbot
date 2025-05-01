@@ -26,95 +26,6 @@ async def on_ready():
 
 
 
-
-
-#下中腳確認連段
-async def exist_confirm(url, author):
-    #URL處理
-    base_url = urlparse(url[0])
-    path_parts = [part for part in base_url.path.split('/') if part]
-    if len(path_parts) >= 2:
-        #去除多餘
-        base_path = '/'.join(path_parts[:2])
-        main_url = f"{base_url.scheme}://{base_url.netloc}/{base_path}/"
-        #神的語言
-        code = path_parts[1]
-    #首圖
-    pic_url = main_url + "1/"
-    #soup獲取html
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    pic_res = requests.get(pic_url, headers=headers, timeout=5)
-    pic_soup = BeautifulSoup(pic_res.text, 'html.parser')
-    main_res = requests.get(main_url, headers=headers, timeout=5)
-    main_soup = BeautifulSoup(main_res.text, 'html.parser')
-
-    #圖片
-    try:
-        imgs = pic_soup.find_all("img")
-        target_image = None
-        for img in imgs:
-            src = img.get("src")
-            if src and "galleries" in src:
-                target_image = src
-                break
-    
-    except Exception as e:
-        return 1
-    
-    #標題
-    title = None
-    try:
-        title_span = main_soup.find("h2", class_="title")
-        if title_span is None:
-            title_span = main_soup.find("h1")
-            #檢查404
-            if title_span.text.strip().find("404") != -1:
-                return 4
-        title_artist = title_span.find("span", class_="before").text.strip()
-        title_name = title_span.find("span", class_="pretty").text.strip()
-        title = f"{title_artist} {title_name}"
-    except Exception as e:
-        return 2
-        
-    # 標籤
-    artist = []
-    character = []
-    language = []
-    tag = []
-    try:
-        for all_tags in main_soup.find_all("span", class_="tags"):
-            for tags in all_tags.find_all("a"):
-                href = tags.get("href", "")
-                name = tags.find("span", class_="name").text.strip()
-                
-                if "/artist/" in href:
-                    artist.append(name)
-                if "/character/" in href:
-                    character.append(name)
-                if "/language/" in href:
-                    language.append(name)
-                if "/tag/" in href:
-                    tag.append(name)
-        
-        embed = discord.Embed(
-            description=(
-                f"## {title} \n"
-                f"### N [{code}]({main_url})\n"
-                f"- 由 {author.mention} 分享 \n"
-                f"  - 繪師：{', '.join(f'`{a}`' for a in artist)}\n"
-                f"  - 標籤：{', '.join(f'`{t}`' for t in tag)}\n"
-                f"  - 角色：{', '.join(f'`{c}`' for c in character)}\n"
-                f"  - 語言：{', '.join(f'`{l}`' for l in language)}"
-            ),
-            color=discord.Color.random() #亂色
-        )
-        #Embed
-        embed.set_image(url=target_image)
-        return embed
-       
-    except Exception as e:
-        return 3
-
 #D反 舊指令
 @client.command()
 async def sr(ctx):
@@ -122,7 +33,6 @@ async def sr(ctx):
 @client.command()
 async def helpme(ctx):
     await ctx.send(f"❗ 指令已經更改了喔~ 使用 /nhelp 查看更多")
-
 
 
 #幫助 nhelp
@@ -147,6 +57,7 @@ async def nhelp(interaction: discord.Interaction):
 
     embed.set_image(url="attachment://voyager.jpg")
     await interaction.response.send_message(file=file, embed=embed)
+
 
 #搜尋指令 nsr
 @client.tree.command(name="nsr",description="搜尋任何N站上的東西")
@@ -207,33 +118,30 @@ async def nsr(interaction: discord.Interaction, search: str):
     result_image.clear()
     result_name.clear()
 
+
 #直接樹入數字 code
 url=[]
 @client.tree.command(name="code",description="直接輸入數字", guild=Guild)
 async def code(interaction: discord.Interaction, code: str):
     print(code)
+    url.clear()
     url.append(f"https://nhentai.net/g/{code}/")
 
+    from confirmURL_N import exist_confirm
+    success_n = False
     author = interaction.user
-    status = await exist_confirm(url, author)
+    success_n, status = await exist_confirm(url, author)
 
-    if status == 1:
-        await interaction.response.send_message("窩很包歉 拿不到圖片 >.<")
-        return
-    elif status == 2:
-        await interaction.response.send_message("搜哩啦 ;-; 找不到標題")
-        return
-    elif status == 3:
-        await interaction.response.send_message("對噗起嗚嗚 窩無法獲取標籤")
-        return
-    elif status == 4:
-        await interaction.response.send_message(f"❌錯誤連結 >:3 或是已經刪除的作品❌")
-        print("== 錯誤 ==\n")
-        return
-    else:
+    if success_n == True:
         #成功
         await interaction.response.send_message(embed=status)
         print("== 成功 ==\n")
+        return
+    elif success_n == False:
+        await interaction.response.send_message(status)
+        print("== 錯誤 ==\n")
+        return
+
 
 #訊息
 @client.event
@@ -241,11 +149,10 @@ async def on_message(message):
     if message.author == client.user:
         return
     await client.process_commands(message)
-
+    
     #篩選指定往玉
-    url_regex = re.compile(
-    r'https?://nhentai\.net/g/[^\s]+'
-    )
+    url_regex = re.compile(r'https?://nhentai\.net/g/[^\s]+')
+    url = []
     url = re.findall(url_regex, message.content)
 
     #測試方便用 直接打[n 數字]
@@ -256,29 +163,24 @@ async def on_message(message):
     if not url:
         return
     
+    success_n = False
+    from confirmURL_N import exist_confirm
     author = message.author
-    status = await exist_confirm(url,author) #確認連結
-    await message.delete() #刪除使用者傳送的訊息
-
-    if status == 1:
-        await message.channel.send("窩很包歉 拿不到圖片 >.<")
-        return
-    elif status == 2:
-        await message.channel.send("搜哩啦 ;-; 找不到標題")
-        return
-    elif status == 3:
-        await message.channel.send("對噗起嗚嗚 窩無法獲取標籤")
-        return
-    elif status == 4:
-        await message.remove_reaction("✅", client.user)
-        await message.add_reaction("❌")
-        await message.channel.send(f"❌錯誤連結 >:3 或是已經刪除的作品❌")
-        print("== 錯誤 ==\n")
-        return
-    else:
+    success_n,status = await exist_confirm(url,author) #確認連結
+    
+    print(url)
+    if success_n == True:
         #成功
+        await message.delete() #刪除使用者傳送的訊息
         await message.channel.send(embed=status)
         print("== 成功 ==\n")
-
+        return
+    elif success_n == False:
+        await message.channel.send(status)
+        await message.remove_reaction("✅", client.user)
+        await message.add_reaction("❌")
+        print("== 錯誤 ==\n")
+        return
+        
 
 client.run(TOKEN)
