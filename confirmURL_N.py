@@ -44,7 +44,7 @@ async def exist_confirm(url, author):
             title_span = main_soup.find("h1")
             #檢查404
             if title_span.text.strip().find("404") != -1:
-                return False, "❌錯誤連結 >:3 或是已經刪除的作品❌"
+                return False, "錯誤連結 >:3 或是已經刪除的作品"
         title_artist = title_span.find("span", class_="before").text.strip()
         title_name = title_span.find("span", class_="pretty").text.strip()
         title = f"{title_artist} {title_name}"
@@ -70,12 +70,11 @@ async def exist_confirm(url, author):
                     language.append(name)
                 if "/tag/" in href:
                     tag.append(name)
-        
+
         embed = discord.Embed(
             description=(
                 f"## [{title}]({main_url}) \n"
                 f"### N - {code}\n"
-                f"- 由 {author.mention} 分享 \n"
                 f"  - 繪師：{', '.join(f'`{a}`' for a in artist)}\n"
                 f"  - 標籤：{', '.join(f'`{t}`' for t in tag)}\n"
                 f"  - 角色：{', '.join(f'`{c}`' for c in character)}\n"

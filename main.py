@@ -171,12 +171,12 @@ async def on_message(message):
     print(url)
     if success_n == True:
         #成功
-        await message.delete() #刪除使用者傳送的訊息
-        await message.channel.send(embed=status)
+        await message.edit(suppress=True)
+        await message.reply(embed=status)
         print("== 成功 ==\n")
         return
     elif success_n == False:
-        await message.channel.send(status)
+        await message.reply(status)
         await message.remove_reaction("✅", client.user)
         await message.add_reaction("❌")
         print("== 錯誤 ==\n")
