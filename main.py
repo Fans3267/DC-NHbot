@@ -39,7 +39,7 @@ async def helpme(ctx):
 @client.tree.command(name="nhelp",description="幫助/指令教學")
 async def nhelp(interaction: discord.Interaction):
     embed = discord.Embed(
-        title="目前功能",
+        title="!! 由於nhentai更新防DDoS把爬蟲也擋了 功能很不穩定 搜尋功能直接廢了 這機器人現在偏沒用 有新功能建議可以告訴我 !!",
         description=(
             "\n"
             "### - 直接輸入完整nhentai網址 : 機器人會自動分析 \n"
