@@ -121,7 +121,7 @@ async def nsr(interaction: discord.Interaction, search: str):
 
 #直接樹入數字 code
 url=[]
-@client.tree.command(name="code",description="直接輸入數字", guild=Guild)
+@client.tree.command(name="code",description="直接輸入數字")
 async def code(interaction: discord.Interaction, code: str):
     print(code)
     url.clear()
@@ -129,8 +129,7 @@ async def code(interaction: discord.Interaction, code: str):
 
     from confirmURL_N import exist_confirm
     success_n = False
-    author = interaction.user
-    success_n, status = await exist_confirm(url, author)
+    success_n, status = await exist_confirm(url)
 
     if success_n == True:
         #成功
@@ -160,15 +159,17 @@ async def on_message(message):
     if num_command:
         num_command = num_command.group(1)
         url.append(f"https://nhentai.net/g/{num_command}/")
+
     if not url:
         return
     
     success_n = False
     from confirmURL_N import exist_confirm
-    author = message.author
-    success_n,status = await exist_confirm(url,author) #確認連結
+    success_n,status = await exist_confirm(url) #確認連結
     
     print(url)
+    print(success_n)
+    print(status)
     if success_n == True:
         #成功
         await message.edit(suppress=True)

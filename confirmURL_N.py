@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 
 #下中腳確認連段
-async def exist_confirm(url, author):
+async def exist_confirm(url):
     #URL處理
     base_url = urlparse(url[0])
     path_parts = [part for part in base_url.path.split('/') if part]
@@ -41,7 +41,7 @@ async def exist_confirm(url, author):
     try:
         title_span = main_soup.find("h2", class_="title")
         if title_span is None:
-            title_span = main_soup.find("h1")
+            title_span = main_soup.find("h1", class_="title")
             #檢查404
             if title_span.text.strip().find("404") != -1:
                 return False, "錯誤連結 >:3 或是已經刪除的作品"
@@ -49,6 +49,7 @@ async def exist_confirm(url, author):
         title_name = title_span.find("span", class_="pretty").text.strip()
         title = f"{title_artist} {title_name}"
     except Exception as e:
+        print(main_soup.prettify()[:500])
         return False, "搜哩啦 ;-; 找不到標題"
         
     # 標籤
